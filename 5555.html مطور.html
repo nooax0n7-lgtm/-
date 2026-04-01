@@ -1,0 +1,358 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>محفظة النجم - النسخة النهائية</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* تعريف المتغيرات اللونية (Variables) لتسهيل تغيير الهوية البصرية من مكان واحد */
+        :root { 
+            --primary: #1e7e4e;       /* اللون الأخضر الداكن الأساسي */
+            --accent: #2ecc71;        /* اللون الأخضر الفاتح للتأكيدات والنجاح */
+            --dark-bg: #020617;       /* لون الخلفية الأساسي للتطبيق */
+            --card-glass: rgba(255, 255, 255, 0.08); /* لون أبيض شفاف جداً لمحاكاة الزجاج */
+            --gold: #f1c40f;          /* لون ذهبي مخصص للنجوم والعمليات المميزة */
+            --text-main: #f8fafc;     /* لون النصوص الأساسي */
+        }
+
+        /* تصفير الهوامش الافتراضية للمتصفح وضبط نوع الخط المفضل للعربية */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        
+        body { 
+            background: var(--dark-bg); 
+            color: var(--text-main); 
+            min-height: 100vh; 
+            overflow-x: hidden; /* إخفاء شريط التمرير العرضي لمنع حدوث اهتزاز جانبي في الجوال */
+        }
+
+        /* الحاوية الرئيسية للتطبيق: تحدد أقصى عرض (450px) لتبدو كشاشة هاتف ذكي حتى على الكمبيوتر */
+        .app-container {
+            width: 100%; 
+            max-width: 450px; 
+            min-height: 100vh; 
+            margin: auto; /* توسيط الحاوية في منتصف الشاشة */
+            background: radial-gradient(circle at top right, #112d22, #020617); /* تدرج لوني دائري يعطي فخامة للخلفية */
+            position: relative; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* القائمة الجانبية: مخفية افتراضياً بجهة اليمين (-100%) وتتحرك بمرونة (transition) */
+        .side-menu {
+            position: fixed; top: 0; right: -100%; width: 75%; height: 100%;
+            background: rgba(2, 6, 23, 0.98); backdrop-filter: blur(15px); /* تأثير زجاجي مع تضبيب الخلفية */
+            z-index: 4000; transition: 0.4s ease; /* سرعة حركة ظهور القائمة */
+            padding: 40px 20px; border-left: 1px solid rgba(255,255,255,0.1);
+        }
+        /* فئة (Class) تضاف عبر JS لتحريك القائمة للداخل عند النقر على الزر */
+        .side-menu.active { right: 0; }
+
+        /* طبقة سوداء شفافة تظهر خلف القائمة لتغطية بقية محتوى التطبيق عند فتح القائمة */
+        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 3500; }
+
+        /* شاشة تسجيل الدخول: تظهر فوق كل شيء (z-index: 3000) لمنع الوصول للرئيسية دون دخول */
+        #loginPage { 
+            position: fixed; inset: 0; z-index: 3000; background: #020617; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; 
+            overflow-y: auto; /* السماح بالتمرير داخل الشاشة إذا كانت الشاشة صغيرة جداً */
+        }
+
+        /* أزرار التبديل (عميل / شركة): حاوية الأزرار مع خلفية شفافة */
+        .role-tabs { display: flex; background: var(--card-glass); padding: 5px; border-radius: 12px; width: 100%; margin-bottom: 20px; }
+        .role-btn { flex: 1; padding: 10px; border: none; border-radius: 10px; background: transparent; color: #94a3b8; cursor: pointer; font-weight: bold; }
+        /* زر الخيار المختار حالياً يكتسي باللون الأخضر الأساسي */
+        .role-btn.active { background: var(--primary); color: white; }
+
+        /* حاوية البطاقات: تسمح بالتمرير الأفقي (scroll) لبطاقات الرصيد */
+        .card-container { 
+            display: flex; gap: 15px; overflow-x: auto; padding: 20px; 
+            scroll-snap-type: x mandatory; /* تجعل البطاقة تنجذب للمنتصف بالضبط عند التمرير */
+            -webkit-overflow-scrolling: touch; /* تمرير سلس على أجهزة آيفون */
+        }
+        .card-container::-webkit-scrollbar { display: none; } /* إخفاء شريط التمرير ليبقى المظهر نظيفاً */
+        
+        /* بطاقة الرصيد اليمني: خلفية متدرجة خضراء وظل يعطي انطباع البروز */
+        .balance-card { 
+            min-width: 85%; flex-shrink: 0; background: linear-gradient(135deg, var(--primary), #064e3b); 
+            padding: 25px; border-radius: 25px; scroll-snap-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        /* بطاقة الرصيد السعودي: خلفية داكنة لتمييزها عن اليمنية */
+        .card-sar { background: linear-gradient(135deg, #1e293b, #334155); }
+
+        /* شبكة الأدوات: تقسم الأيقونات (تحويل، شحن، مسح) إلى 4 أعمدة متساوية */
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 10px; 
+            padding: 15px; 
+        }
+        .tool { text-align: center; cursor: pointer; }
+        /* تصميم الدائرة أو المربع الذي يحتوي الأيقونة مع إطار شفاف خفيف */
+        .tool-icon { 
+            width: 50px; height: 50px; 
+            background: var(--card-glass); border-radius: 15px; 
+            display: flex; align-items: center; justify-content: center; 
+            margin: 0 auto 8px; color: var(--accent); font-size: 18px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+        }
+
+        /* تنسيق الصفحات الداخلية: مخفية افتراضياً وتظهر فقط عند طلبها */
+        .page { 
+            display: none; 
+            padding: 20px; 
+            flex: 1;
+            overflow-y: visible; 
+            padding-bottom: 50px; 
+        }
+        /* فئة تظهر الصفحة وتضيف لها حركة تلاشي (Fade-in) */
+        .active-page { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* تنسيق حقول الإدخال: خلفية معتمة وحواف منحنية لراحة العين */
+        input, select { width: 100%; padding: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; color: white; margin-bottom: 15px; font-size: 16px; }
+        /* الزر الرئيسي: تدرج لوني من الأخضر للفتح مع نص عريض */
+        .btn-main { width: 100%; padding: 18px; background: linear-gradient(90deg, var(--primary), var(--accent)); border: none; border-radius: 15px; color: white; font-weight: bold; cursor: pointer; }
+
+        /* تنسيق كروت شركات الاتصال في صفحة الشحن */
+        .operator-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 15px; }
+        .op-card { background: var(--card-glass); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        
+        /* تنسيق سجل العمليات: يتميز بخط جانبي ملون لتمثيل النجاح */
+        .txn-item { background: var(--card-glass); padding: 15px; border-radius: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; border-right: 4px solid var(--accent); align-items: center; }
+
+        /* توافق الشاشات الصغيرة جداً: تصغير الأيقونات قليلاً لضمان عدم تداخلها */
+        @media (max-width: 360px) {
+            .grid { grid-template-columns: repeat(3, 1fr); }
+            .balance-card { padding: 15px; }
+            .tool-icon { width: 45px; height: 45px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <div class="menu-overlay" id="overlay" onclick="toggleMenu()"></div>
+    <div class="side-menu" id="sideMenu">
+        <div style="text-align:center; margin-bottom:30px;">
+            <i class="fas fa-user-circle" style="font-size:60px; color:var(--primary);"></i>
+            <h3 id="menuName" style="margin-top:10px;">ميمي ✨</h3>
+            <p style="font-size:12px; color:#64748b;">حساب نشط</p>
+        </div>
+        <div class="menu-item" onclick="showPage('dashPage'); toggleMenu()"><i class="fas fa-user"></i> الحساب الشخصي</div>
+        <div class="menu-item" onclick="showPage('statementPage'); toggleMenu()"><i class="fas fa-history"></i> العمليات</div>
+        <div class="menu-item" onclick="showPage('branchesPage'); toggleMenu()"><i class="fas fa-map-marked-alt"></i> الفروع</div>
+        <div class="menu-item" onclick="showPage('statementPage'); toggleMenu()"><i class="fas fa-file-invoice-dollar"></i> كشف الحساب</div>
+        <div class="menu-item" style="color:#ef4444; margin-top:40px;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</div>
+    </div>
+
+    <div id="loginPage">
+        <i class="fas fa-star" style="font-size: 60px; color: var(--gold); margin-bottom: 20px;"></i>
+        <h2 style="margin-bottom:30px;">محفظة النجم ✨</h2>
+        
+        <div class="role-tabs">
+            <button id="tabClient" class="role-btn active" onclick="setRole('client')">عميل</button>
+            <button id="tabCompany" class="role-btn" onclick="setRole('company')">شركة</button>
+        </div>
+
+        <input type="number" id="uPhone" placeholder="رقم الهاتف">
+        <input type="password" id="uPass" placeholder="كلمة المرور">
+        <button class="btn-main" onclick="handleLogin()">دخول آمن</button>
+    </div>
+
+    <div id="dashPage" class="page">
+        <div style="display:flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+            <i class="fas fa-ellipsis-v" onclick="toggleMenu()" style="font-size: 22px; cursor:pointer; color:var(--accent);"></i>
+            <h3 id="appHeader">النجم</h3>
+            <i class="fas fa-bell" style="font-size: 20px; color:#64748b;"></i>
+        </div>
+
+        <div class="card-container">
+            <div class="balance-card">
+                <small style="opacity:0.8;">الرصيد اليمني (YER)</small>
+                <h1 id="yBal">100,000 <small style="font-size:12px;">ريال</small></h1>
+                <p style="font-size:12px; opacity:0.5; margin-top:10px;">**** **** **** 2026</p>
+            </div>
+            <div class="balance-card card-sar" id="sarCard" style="display:none;">
+                <small style="opacity:0.8;">الرصيد السعودي (SAR)</small>
+                <h1 id="sBal">1,000 <small style="font-size:12px;">ريال</small></h1>
+                <p style="font-size:12px; opacity:0.5; margin-top:10px;">BUSINESS CARD</p>
+            </div>
+        </div>
+
+        <div class="grid" id="mainGrid"></div>
+
+        <h4 style="margin: 15px 0;">آخر العمليات</h4>
+        <div id="txnList"></div>
+    </div>
+
+    <div id="topupPage" class="page">
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+            <i class="fas fa-arrow-right" onclick="showPage('dashPage')"></i>
+            <h3>الشحن الفوري</h3>
+        </div>
+        <div class="operator-grid">
+            <div class="op-card" style="color:#ef4444;"><i class="fas fa-signal"></i><br>يمن موبايل</div>
+            <div class="op-card" style="color:#3b82f6;"><i class="fas fa-wifi"></i><br>يو (YOU)</div>
+            <div class="op-card" style="color:#f59e0b;"><i class="fas fa-phone"></i><br>سبأفون</div>
+            <div class="op-card" style="color:#10b981;"><i class="fas fa-globe"></i><br>واي (Y)</div>
+        </div>
+        <input type="number" placeholder="رقم الهاتف" style="margin-top:20px;">
+        <input type="number" placeholder="المبلغ">
+        <button class="btn-main" onclick="alert('تم الشحن!')">تأكيد الشحن</button>
+    </div>
+
+    <div id="transferPage" class="page">
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+            <i class="fas fa-arrow-right" onclick="showPage('dashPage')"></i>
+            <h3>تحويل أموال</h3>
+        </div>
+        <select id="tCurr">
+            <option value="YER">المحفظة اليمنية</option>
+            <option value="SAR" id="optSar" style="display:none;">المحفظة السعودية</option>
+        </select>
+        <input type="text" id="tName" placeholder="اسم المستلم">
+        <input type="number" id="tAmt" placeholder="المبلغ">
+        <button class="btn-main" onclick="confirmTxn()">إرسال الآن</button>
+    </div>
+
+    <div id="exPage" class="page">
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+            <i class="fas fa-arrow-right" onclick="showPage('dashPage')"></i>
+            <h3>المصارفة</h3>
+        </div>
+        <div style="background:rgba(46,204,113,0.1); padding:15px; border-radius:15px; text-align:center; margin-bottom:20px;">
+            سعر الصرف: 1 سعودي = 535 يمني
+        </div>
+        <select id="exType">
+            <option value="S_TO_Y">من سعودي إلى يمني</option>
+            <option value="Y_TO_S">من يمني إلى سعودي</option>
+        </select>
+        <input type="number" id="exAmt" placeholder="المبلغ">
+        <button class="btn-main" onclick="alert('تمت المصارفة!')">إتمام العملية</button>
+    </div>
+
+    <div id="statementPage" class="page">
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+            <i class="fas fa-arrow-right" onclick="showPage('dashPage')"></i>
+            <h3>كشف الحساب</h3>
+        </div>
+        <div id="fullHistory"></div>
+    </div>
+
+    <div id="branchesPage" class="page">
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
+            <i class="fas fa-arrow-right" onclick="showPage('dashPage')"></i>
+            <h3>فروعنا</h3>
+        </div>
+        <div class="txn-item">📍 فرع صنعاء - حدة</div>
+        <div class="txn-item">📍 فرع صنعاء - السبعين</div>
+        <div class="txn-item">📍 فرع عدن - المعلا</div>
+    </div>
+
+</div>
+
+<script>
+    /* متغيرات لحفظ حالة المستخدم وأرصدته خلال الجلسة الحالية */
+    let role = 'client';
+    let balanceY = 100000;
+    let balanceS = 1000;
+
+    /** وظيفة لتغيير نوع المستخدم عند النقر على الأزرار في صفحة الدخول **/
+    function setRole(r) {
+        role = r;
+        document.getElementById('tabClient').className = (r === 'client' ? 'role-btn active' : 'role-btn');
+        document.getElementById('tabCompany').className = (r === 'company' ? 'role-btn active' : 'role-btn');
+    }
+
+    /** وظيفة لفتح وإغلاق القائمة الجانبية مع طبقة التعتيم **/
+    function toggleMenu() {
+        const m = document.getElementById('sideMenu');
+        const o = document.getElementById('overlay');
+        m.classList.toggle('active');
+        o.style.display = m.classList.contains('active') ? 'block' : 'none';
+    }
+
+    /** معالجة عملية الدخول وتخصيص الواجهة بناءً على الرتبة (عميل أو شركة) **/
+    function handleLogin() {
+        const ph = document.getElementById('uPhone').value;
+        const ps = document.getElementById('uPass').value;
+        if(!ph || !ps) return alert("أدخل البيانات عزيزي العميل!");
+
+        // إخفاء شاشة الدخول وعرض لوحة التحكم
+        document.getElementById('loginPage').style.display = 'none';
+        showPage('dashPage');
+
+        // إذا كان المستخدم "شركة" يتم إظهار البطاقة السعودية وخيارات المصارفة
+        if(role === 'company') {
+            document.getElementById('appHeader').innerText = "محفظة الشركات";
+            document.getElementById('sarCard').style.display = 'block';
+            document.getElementById('optSar').style.display = 'block';
+            document.getElementById('menuName').innerText = "شركة النجم ✨";
+        } else {
+            document.getElementById('appHeader').innerText = "محفظة النجم (الحطامي)";
+            document.getElementById('sarCard').style.display = 'none';
+            document.getElementById('optSar').style.display = 'none';
+            document.getElementById('menuName').innerText = "النجم ✨";
+        }
+        renderTools(); // تحديث أيقونات الخدمات في الشاشة الرئيسية
+    }
+
+    /** وظيفة لتسجيل الخروج ومسح بيانات الجلسة الحالية من الشاشة **/
+    function logout() {
+        document.getElementById('loginPage').style.display = 'flex';
+        document.getElementById('uPhone').value = "";
+        document.getElementById('uPass').value = "";
+        toggleMenu();
+    }
+
+    /** وظيفة لإنشاء أيقونات الأدوات برمجياً بناءً على صلاحيات المستخدم **/
+    function renderTools() {
+        let tools = `
+            <div class="tool" onclick="showPage('transferPage')"><div class="tool-icon"><i class="fas fa-paper-plane"></i></div><small>تحويل</small></div>
+            <div class="tool" onclick="alert('فتح الكاميرا...')"><div class="tool-icon" style="background:var(--primary); color:white;"><i class="fas fa-qrcode"></i></div><small>مسح</small></div>
+            <div class="tool" onclick="showPage('topupPage')"><div class="tool-icon"><i class="fas fa-mobile-alt"></i></div><small>شحن</small></div>
+        `;
+        // زر المصارفة يظهر فقط للشركات
+        if(role === 'company') {
+            tools += `<div class="tool" onclick="showPage('exPage')"><div class="tool-icon" style="color:var(--gold);"><i class="fas fa-sync-alt"></i></div><small>مصارفة</small></div>`;
+        }
+        tools += `<div class="tool" onclick="alert('قريباً')"><div class="tool-icon"><i class="fas fa-ellipsis-h"></i></div><small>المزيد</small></div>`;
+        document.getElementById('mainGrid').innerHTML = tools;
+    }
+
+    /** معالجة عملية إرسال الأموال وتحديث سجل العمليات فورياً **/
+    function confirmTxn() {
+        const n = document.getElementById('tName').value;
+        const a = parseFloat(document.getElementById('tAmt').value);
+        const c = document.getElementById('tCurr').value;
+
+        if(!n || !a) return alert("أكمل البيانات!");
+        
+        // بناء عنصر HTML للعملية المالية الجديدة وإضافته في بداية القائمة
+        const item = `<div class="txn-item"><div><b>${n}</b><br><small>اليوم</small></div><b style="color:#ef4444;">-${a} ${c}</b></div>`;
+        document.getElementById('txnList').insertAdjacentHTML('afterbegin', item);
+        document.getElementById('fullHistory').insertAdjacentHTML('afterbegin', item);
+        
+        alert("تمت العملية بنجاح ✅");
+        showPage('dashPage');
+    }
+
+    /** وظيفة التنقل بين الصفحات: تخفي جميع الصفحات وتظهر الصفحة المطلوبة فقط **/
+    function showPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+        document.getElementById(id).classList.add('active-page');
+    }
+
+    /** أوامر تنفذ بمجرد تحميل الصفحة بالكامل لوضع بيانات تجريبية **/
+    window.onload = () => {
+        const demo = `<div class="txn-item"><div><b>إيداع نقدي</b><br><small>أمس</small></div><b style="color:var(--accent);">+50,000 YER</b></div>`;
+        document.getElementById('txnList').innerHTML = demo;
+        document.getElementById('fullHistory').innerHTML = demo;
+    };
+</script>
+
+</body>
+</html>
