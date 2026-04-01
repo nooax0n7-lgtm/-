@@ -1,0 +1,403 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محفظة النجم - نسخة الإدارة</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root { 
+            --primary: #1e7e4e; 
+            --accent: #2ecc71; 
+            --gold: #f1c40f;
+            --admin-color: #8b5cf6; /* لون خاص بتمييز واجهة الآدمن */
+            --bg-main: #020617;
+            --bg-gradient: radial-gradient(circle at top right, #112d22, #020617);
+            --card-glass: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --input-bg: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body.light-mode {
+            --bg-main: #f1f5f9;
+            --bg-gradient: radial-gradient(circle at top right, #e2e8f0, #f1f5f9);
+            --card-glass: rgba(0, 0, 0, 0.05);
+            --text-main: #1e293b;
+            --input-bg: #ffffff;
+            --border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: var(--bg-main); color: var(--text-main); height: 100vh; overflow: hidden; transition: 0.3s; }
+
+        .app-container {
+            width: 100%; max-width: 450px; height: 100vh; margin: auto;
+            background: var(--bg-gradient);
+            position: relative; overflow: hidden;
+        }
+
+        .side-menu {
+            position: absolute; top: 0; right: -100%; width: 75%; height: 100%;
+            background: var(--bg-main); backdrop-filter: blur(15px);
+            z-index: 2000; transition: 0.4s ease;
+            padding: 40px 20px; border-left: 1px solid var(--border-color);
+        }
+        .side-menu.active { right: 0; }
+        
+        .menu-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
+        .menu-item { padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; border-bottom: 1px solid var(--border-color); color: var(--text-main); }
+
+        .auth-page { position: absolute; inset: 0; z-index: 3000; background: var(--bg-main); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; }
+        #registerPage { display: none; }
+        
+        .role-tabs { display: flex; background: var(--card-glass); padding: 5px; border-radius: 12px; width: 100%; margin-bottom: 20px; }
+        .role-btn { flex: 1; padding: 10px; border: none; border-radius: 10px; background: transparent; color: #94a3b8; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .role-btn.active { background: var(--primary); color: white; }
+        /* تمييز زر الآدمن عند التفعيل */
+        .role-btn.active-admin { background: var(--admin-color); color: white; }
+
+        .card-container { display: flex; gap: 15px; overflow-x: auto; padding: 20px; scroll-snap-type: x mandatory; }
+        .balance-card { 
+            min-width: 85%; background: linear-gradient(135deg, var(--primary), #064e3b); 
+            padding: 25px; border-radius: 25px; scroll-snap-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.2); color: white;
+        }
+        .card-sar { background: linear-gradient(135deg, #1e293b, #334155); }
+        /* بطاقة الآدمن */
+        .card-admin { background: linear-gradient(135deg, #6d28d9, #4c1d95); }
+
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 20px; }
+        .tool { text-align: center; cursor: pointer; text-decoration: none; color: inherit; }
+        .tool-icon { width: 55px; height: 55px; background: var(--card-glass); border-radius: 15px; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; color: var(--accent); font-size: 20px; border: 1px solid var(--border-color); }
+
+        .page { display: none; padding: 20px; height: 100%; overflow-y: auto; padding-bottom: 100px; }
+        .active-page { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        input, select { width: 100%; padding: 16px; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 15px; color: var(--text-main); margin-bottom: 15px; }
+        input:focus { outline: none; border-color: var(--accent); background: var(--input-bg); color: var(--text-main); }
+        
+        .btn-main { width: 100%; padding: 18px; background: linear-gradient(90deg, var(--primary), var(--accent)); border: none; border-radius: 15px; color: white; font-weight: bold; cursor: pointer; }
+        .btn-admin { background: linear-gradient(90deg, #8b5cf6, #6d28d9); }
+        .btn-link { background: none; border: none; color: var(--accent); margin-top: 15px; cursor: pointer; text-decoration: underline; }
+
+        .txn-item { background: var(--card-glass); padding: 15px; border-radius: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; border-right: 4px solid var(--accent); align-items: center; }
+        .pending-border { border-right-color: var(--gold); } /* تمييز العمليات المعلقة */
+        
+        .theme-toggle { cursor: pointer; font-size: 20px; color: var(--gold); }
+
+        /* ستايل لبطاقات الإحصائيات في لوحة الآدمن */
+        .stat-box { background: var(--card-glass); padding: 15px; border-radius: 15px; text-align: center; border: 1px solid var(--border-color); }
+        .stat-box h2 { color: var(--admin-color); margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <div class="menu-overlay" id="overlay" onclick="toggleMenu()"></div>
+
+    <div class="side-menu" id="sideMenu">
+        <div style="text-align:center; margin-bottom:30px;">
+            <i class="fas fa-user-shield" id="menuIcon" style="font-size:60px; color:var(--primary);"></i>
+            <h3 id="menuName" style="margin-top:10px;">المستخدم✨</h3>
+            <p id="menuStatus" style="font-size:12px; color:#64748b;">حساب نشط</p>
+        </div>
+        <div class="menu-item" onclick="toggleTheme()"><i class="fas fa-adjust"></i> تبديل الوضع (فاتح/داكن)</div>
+        <div class="menu-item" onclick="showPage('dashPage'); toggleMenu()"><i class="fas fa-th-large"></i> لوحة التحكم</div>
+        <div id="adminLink" style="display:none;">
+            <div class="menu-item" onclick="showPage('adminPanel'); toggleMenu()"><i class="fas fa-tools"></i> إدارة النظام</div>
+            <div class="menu-item" onclick="alert('إضافة إشعار عام')"><i class="fas fa-bullhorn"></i> إرسال تنبيهات</div>
+        </div>
+        <div class="menu-item" onclick="showPage('statementPage'); toggleMenu()"><i class="fas fa-history"></i> العمليات</div>
+        <div class="menu-item" onclick="showPage('branchesPage'); toggleMenu()"><i class="fas fa-map-marked-alt"></i> الفروع</div>
+        <div class="menu-item" style="color:#ef4444; margin-top:40px;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</div>
+    </div>
+
+    <div id="loginPage" class="auth-page">
+        <i class="fas fa-star" style="font-size: 60px; color: var(--gold); margin-bottom: 20px;"></i>
+        <h2 style="margin-bottom:30px;">محفظة النجم ✨</h2>
+        <div class="role-tabs">
+            <button id="tabClient" class="role-btn active" onclick="setRole('client')">عميل</button>
+            <button id="tabCompany" class="role-btn" onclick="setRole('company')">شركة</button>
+            <button id="tabAdmin" class="role-btn" onclick="setRole('admin')">مدير النظام</button>
+        </div>
+        <input type="number" id="uPhone" placeholder="رقم الهاتف">
+        <input type="password" id="uPass" placeholder="كلمة المرور">
+        <button id="loginBtn" class="btn-main" onclick="handleLogin()">دخول آمن</button>
+        <button class="btn-link" onclick="toggleAuth('register')">ليس لديك حساب؟ سجل الآن</button>
+    </div>
+
+    <div id="registerPage" class="auth-page">
+        <i class="fas fa-user-plus" style="font-size: 60px; color: var(--accent); margin-bottom: 20px;"></i>
+        <h2 style="margin-bottom:30px;">إنشاء حساب جديد</h2>
+        <input type="text" id="regName" placeholder="الاسم الكامل">
+        <input type="number" id="regPhone" placeholder="رقم الهاتف">
+        <input type="password" id="regPass" placeholder="كلمة المرور">
+        <button class="btn-main" onclick="handleRegister()">تأكيد التسجيل</button>
+        <button class="btn-link" onclick="toggleAuth('login')">لديك حساب بالفعل؟ دخول</button>
+    </div>
+
+    <div id="dashPage" class="page">
+        <div class="d-flex justify-content-between align-items-center py-2">
+            <i class="fas fa-bars" onclick="toggleMenu()" style="font-size: 22px; cursor:pointer; color:var(--accent);"></i>
+            <h3 id="appHeader" class="m-0">النجم</h3>
+            <i class="fas fa-adjust theme-toggle" onclick="toggleTheme()"></i>
+        </div>
+
+        <div class="card-container">
+            <div class="balance-card" id="mainCard">
+                <small style="opacity:0.8;" id="balLabel">الرصيد اليمني (YER)</small>
+                <h1 id="yBal" class="my-2">100,000 <small style="font-size:12px;">ريال</small></h1>
+                <p style="font-size:12px; opacity:0.5;">**** **** **** 2026</p>
+            </div>
+            <div class="balance-card card-sar" id="sarCard" style="display:none;">
+                <small style="opacity:0.8;">الرصيد السعودي (SAR)</small>
+                <h1 id="sBal" class="my-2">1,000 <small style="font-size:12px;">ريال</small></h1>
+                <p style="font-size:12px; opacity:0.5;">BUSINESS CARD</p>
+            </div>
+        </div>
+
+        <div class="grid" id="mainGrid"></div>
+
+        <h4 class="mt-4 mb-3" id="txnHeader">آخر العمليات</h4>
+        <div id="txnList"></div>
+    </div>
+
+    <div id="adminPanel" class="page">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <i class="fas fa-arrow-right" onclick="showPage('dashPage')"></i>
+            <h3>لوحة الإدارة الكاملة</h3>
+        </div>
+        
+        <div class="row g-3 mb-4">
+            <div class="col-6"><div class="stat-box"><span>المستخدمين</span><h2>1,250</h2></div></div>
+            <div class="col-6"><div class="stat-box"><span>حوالات معلقة</span><h2 style="color:var(--gold)">14</h2></div></div>
+        </div>
+
+        <h5 class="mb-3">الحوالات بانتظار الموافقة</h5>
+        <div id="pendingTxns">
+            <div class="txn-item pending-border">
+                <div><b>أحمد محمد (حوالة صادرة)</b><br><small>منذ 5 دقائق</small></div>
+                <div class="text-end">
+                    <b style="color:var(--gold);">50,000 YER</b><br>
+                    <button class="btn btn-sm btn-success mt-1" onclick="this.parentElement.parentElement.remove()">موافقة</button>
+                </div>
+            </div>
+            <div class="txn-item pending-border">
+                <div><b>شركة النور (مصارفة)</b><br><small>منذ 12 دقيقة</small></div>
+                <div class="text-end">
+                    <b style="color:var(--gold);">200 SAR</b><br>
+                    <button class="btn btn-sm btn-success mt-1" onclick="this.parentElement.parentElement.remove()">موافقة</button>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-main btn-admin mt-3" onclick="alert('جاري توليد تقرير شامل...')">تحميل تقرير يومي CSV</button>
+    </div>
+
+    <div id="topupPage" class="page">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <i class="fas fa-arrow-right" onclick="showPage('dashPage')"></i>
+            <h3>الشحن الفوري</h3>
+        </div>
+        <div class="row g-2">
+            <div class="col-6"><div class="txn-item justify-content-center flex-column py-3" style="color:#ef4444;"><i class="fas fa-signal mb-1"></i>يمن موبايل</div></div>
+            <div class="col-6"><div class="txn-item justify-content-center flex-column py-3" style="color:#3b82f6;"><i class="fas fa-wifi mb-1"></i>يو (YOU)</div></div>
+            <div class="col-6"><div class="txn-item justify-content-center flex-column py-3" style="color:#f59e0b;"><i class="fas fa-phone mb-1"></i>سبأفون</div></div>
+            <div class="col-6"><div class="txn-item justify-content-center flex-column py-3" style="color:#10b981;"><i class="fas fa-globe mb-1"></i>واي (Y)</div></div>
+        </div>
+        <input type="number" placeholder="رقم الهاتف" class="mt-4">
+        <input type="number" placeholder="المبلغ">
+        <button class="btn-main">تأكيد الشحن</button>
+    </div>
+
+    <div id="transferPage" class="page">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <i class="fas fa-arrow-right" onclick="showPage('dashPage')"></i>
+            <h3>تحويل أموال</h3>
+        </div>
+        <select id="tCurr">
+            <option value="YER">المحفظة اليمنية</option>
+            <option value="SAR" id="optSar" style="display:none;">المحفظة السعودية</option>
+        </select>
+        <input type="text" id="tName" placeholder="اسم المستلم">
+        <input type="number" id="tAmt" placeholder="المبلغ">
+        <button class="btn-main" onclick="confirmTxn()">إرسال الآن</button>
+    </div>
+
+    <div id="statementPage" class="page">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <i class="fas fa-arrow-right" onclick="showPage('dashPage')"></i>
+            <h3>كشف الحساب</h3>
+        </div>
+        <div id="fullHistory"></div>
+    </div>
+
+    <div id="branchesPage" class="page">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <i class="fas fa-arrow-right" onclick="showPage('dashPage')"></i>
+            <h3>فروعنا</h3>
+        </div>
+        <div class="txn-item"><i class="fas fa-map-marker-alt me-2"></i> فرع صنعاء - حدة</div>
+        <div class="txn-item"><i class="fas fa-map-marker-alt me-2"></i> فرع عدن - المعلا</div>
+    </div>
+
+</div>
+
+<script>
+    let role = 'client'; 
+    let currentUser = "النجم";
+
+    function toggleTheme() {
+        document.body.classList.toggle('light-mode');
+    }
+
+    function toggleAuth(target) {
+        if(target === 'register') {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('registerPage').style.display = 'flex';
+        } else {
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('registerPage').style.display = 'none';
+        }
+    }
+
+    // تحديث: منطق تبديل الأدوار ليشمل "الآدمن"
+    function setRole(r) {
+        role = r;
+        // إزالة الكلاسات النشطة من الجميع
+        document.getElementById('tabClient').classList.remove('active');
+        document.getElementById('tabCompany').classList.remove('active');
+        document.getElementById('tabAdmin').classList.remove('active', 'active-admin');
+        
+        const loginBtn = document.getElementById('loginBtn');
+
+        if(r === 'client') {
+            document.getElementById('tabClient').classList.add('active');
+            loginBtn.className = "btn-main";
+        } else if(r === 'company') {
+            document.getElementById('tabCompany').classList.add('active');
+            loginBtn.className = "btn-main";
+        } else if(r === 'admin') {
+            document.getElementById('tabAdmin').classList.add('active-admin');
+            loginBtn.className = "btn-main btn-admin"; // تغيير لون زر الدخول للبنفسجي
+        }
+    }
+
+    function toggleMenu() {
+        const m = document.getElementById('sideMenu');
+        const o = document.getElementById('overlay');
+        m.classList.toggle('active');
+        o.style.display = m.classList.contains('active') ? 'block' : 'none';
+    }
+
+    function handleLogin() {
+        const ph = document.getElementById('uPhone').value;
+        const ps = document.getElementById('uPass').value;
+        if(!ph || !ps) return alert("أدخل البيانات للمتابعة!");
+        
+        // محاكاة تسجيل دخول الآدمن
+        if(role === 'admin') {
+            currentUser = "مدير النظام";
+        }
+        loginSuccess(currentUser);
+    }
+
+    function handleRegister() {
+        const name = document.getElementById('regName').value;
+        if(!name) return alert("الرجاء إكمال كافة البيانات!");
+        currentUser = name;
+        alert("تم إنشاء حسابك بنجاح ✨");
+        loginSuccess(name);
+    }
+
+    // تحديث: تخصيص الواجهة عند دخول الآدمن
+    function loginSuccess(userName) {
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('registerPage').style.display = 'none';
+        showPage('dashPage');
+
+        const appHeader = document.getElementById('appHeader');
+        const menuName = document.getElementById('menuName');
+        const adminLink = document.getElementById('adminLink');
+        const menuIcon = document.getElementById('menuIcon');
+
+        // تصفير الإعدادات الافتراضية
+        adminLink.style.display = 'none';
+        document.getElementById('sarCard').style.display = 'none';
+        document.getElementById('mainCard').className = "balance-card";
+
+        if(role === 'admin') {
+            appHeader.innerText = "لوحة التحكم (Admin)";
+            menuName.innerText = userName;
+            adminLink.style.display = 'block'; // إظهار روابط الإدارة في القائمة الجانبية
+            menuIcon.className = "fas fa-user-shield";
+            menuIcon.style.color = "var(--admin-color)";
+            document.getElementById('mainCard').classList.add('card-admin');
+            document.getElementById('balLabel').innerText = "إجمالي سيولة النظام (YER)";
+            document.getElementById('sarCard').style.display = 'block';
+        } else if(role === 'company') {
+            appHeader.innerText = "محفظة الشركات";
+            document.getElementById('sarCard').style.display = 'block';
+            menuName.innerText = userName + " (شركة)";
+            menuIcon.className = "fas fa-building";
+            menuIcon.style.color = "var(--primary)";
+        } else {
+            appHeader.innerText = "محفظة النجم";
+            menuName.innerText = userName;
+            menuIcon.className = "fas fa-user-circle";
+            menuIcon.style.color = "var(--primary)";
+        }
+        renderTools();
+    }
+
+    function logout() {
+        location.reload(); // إعادة التحميل لضمان مسح كافة الصلاحيات
+    }
+
+    // تحديث: إضافة زر "لوحة الإدارة" في الشبكة للآدمن
+    function renderTools() {
+        let tools = `
+            <div class="tool" onclick="showPage('transferPage')"><div class="tool-icon"><i class="fas fa-paper-plane"></i></div><small>تحويل</small></div>
+            <div class="tool" onclick="alert('فتح الكاميرا...')"><div class="tool-icon" style="background:var(--primary); color:white;"><i class="fas fa-qrcode"></i></div><small>مسح</small></div>
+            <div class="tool" onclick="showPage('topupPage')"><div class="tool-icon"><i class="fas fa-mobile-alt"></i></div><small>شحن</small></div>
+        `;
+        
+        if(role === 'admin') {
+            tools += `<div class="tool" onclick="showPage('adminPanel')"><div class="tool-icon" style="color:var(--admin-color);"><i class="fas fa-tools"></i></div><small>الإدارة</small></div>`;
+        } else if(role === 'company') {
+            tools += `<div class="tool" onclick="alert('مصارفة...')"><div class="tool-icon" style="color:var(--gold);"><i class="fas fa-sync-alt"></i></div><small>مصارفة</small></div>`;
+        } else {
+            tools += `<div class="tool" onclick="alert('قريباً')"><div class="tool-icon"><i class="fas fa-ellipsis-h"></i></div><small>المزيد</small></div>`;
+        }
+        
+        document.getElementById('mainGrid').innerHTML = tools;
+    }
+
+    function confirmTxn() {
+        const n = document.getElementById('tName').value;
+        const a = document.getElementById('tAmt').value;
+        if(!n || !a) return alert("أكمل البيانات!");
+        const item = `<div class="txn-item"><div><b>${n}</b><br><small>انتظار الموافقة</small></div><b style="color:var(--gold);">-${a} YER</b></div>`;
+        document.getElementById('txnList').insertAdjacentHTML('afterbegin', item);
+        alert("تم إرسال الطلب، بانتظار موافقة الإدارة ✅");
+        showPage('dashPage');
+    }
+
+    function showPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+        document.getElementById(id).classList.add('active-page');
+    }
+
+    window.onload = () => {
+        const demo = `<div class="txn-item"><div><b>إيداع رصيد</b><br><small>أمس</small></div><b style="color:var(--accent);">+50,000 YER</b></div>`;
+        document.getElementById('txnList').innerHTML = demo;
+        document.getElementById('fullHistory').innerHTML = demo;
+    };
+</script>
+</body>
+</html>
